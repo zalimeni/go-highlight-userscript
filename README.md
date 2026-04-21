@@ -1,6 +1,6 @@
 # go-highlight-userscript
 
-Syntax highlights any `<pre>` element on the Go or GoDoc site.
+Syntax highlights `<pre>` code blocks on Go/GoDoc pages, including expandable examples on pkg.go.dev.
 
 Uses [Prism](http://prismjs.com/) to do the syntax highlighting. Edit the script if you want a different theme (or extra plugins).
 
