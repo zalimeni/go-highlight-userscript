@@ -8,6 +8,7 @@
 // @match        http://golang.org/pkg/*
 // @match        https://godoc.org/*
 // @match        https://golang.org/pkg/*
+// @match        https://pkg.go.dev/*
 // @grant        none
 // ==/UserScript==
 
