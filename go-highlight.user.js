@@ -223,11 +223,58 @@ function htmlDecode(str) {
       Prism.highlightElement(code);
     }
     
+    function highlightTextarea(textarea) {
+      if (!textarea || textarea.getAttribute("data-go-highlighted") === "1") { return; }
+      
+      var pre = d.createElement("pre");
+      var code = d.createElement("code");
+      pre.className = textarea.className;
+      code.className = textarea.className + " language-go";
+      code.setAttribute("data-go-highlight-wrapper", "1");
+      code.textContent = textarea.value || textarea.textContent || "";
+      pre.appendChild(code);
+      
+      pre.setAttribute("data-go-highlighted", "1");
+      textarea.setAttribute("data-go-highlighted", "1");
+      textarea.parentNode.replaceChild(pre, textarea);
+      Prism.highlightElement(code);
+    }
+    
     function highlightPresIn(node) {
       if (!node) { return; }
-      var pres = node.getElementsByTagName("pre");
+      if (/pre/i.test(node.nodeName)) {
+        highlightPre(node);
+      }
+      var pres = node.querySelectorAll("pre");
       for (var i = 0; i < pres.length; i++) {
         highlightPre(pres[i]);
+      }
+    }
+    
+    function highlightTextareasIn(node) {
+      if (!node) { return; }
+      if (/textarea/i.test(node.nodeName)) {
+        highlightTextarea(node);
+      }
+      var textareas = node.querySelectorAll("textarea.code, textarea.Documentation-exampleCode");
+      for (var i = 0; i < textareas.length; i++) {
+        highlightTextarea(textareas[i]);
+      }
+    }
+    
+    function highlightCodeContainersIn(node) {
+      highlightPresIn(node);
+      highlightTextareasIn(node);
+    }
+    
+    function highlightPendingPres() {
+      var pres = d.querySelectorAll("pre:not([data-go-highlighted='1'])");
+      for (var i = 0; i < pres.length; i++) {
+        highlightPre(pres[i]);
+      }
+      var textareas = d.querySelectorAll("textarea.code:not([data-go-highlighted='1']), textarea.Documentation-exampleCode:not([data-go-highlighted='1'])");
+      for (var j = 0; j < textareas.length; j++) {
+        highlightTextarea(textareas[j]);
       }
     }
     
@@ -255,7 +302,7 @@ function htmlDecode(str) {
         env.element.innerHTML = htmlDecode(tmp);
     });
     
-    highlightPresIn(d);
+    highlightPendingPres();
     
     if (window.MutationObserver) {
       var observer = new MutationObserver(function(mutations) {
@@ -266,13 +313,26 @@ function htmlDecode(str) {
             if (!node || node.nodeType !== 1) { continue; }
             if (/pre/i.test(node.nodeName)) {
               highlightPre(node);
+            } else if (/textarea/i.test(node.nodeName)) {
+              highlightTextarea(node);
             } else if (node.getElementsByTagName) {
-              highlightPresIn(node);
+              highlightCodeContainersIn(node);
             }
           }
         }
+        highlightPendingPres();
       });
       observer.observe(d.body || d.documentElement, { childList: true, subtree: true });
     }
+    
+    d.addEventListener("toggle", function(e) {
+      if (e.target && /details/i.test(e.target.nodeName)) {
+        highlightCodeContainersIn(e.target);
+      }
+    }, true);
+    
+    setTimeout(highlightPendingPres, 500);
+    setTimeout(highlightPendingPres, 1500);
+    setTimeout(highlightPendingPres, 3000);
     
 })(document);
