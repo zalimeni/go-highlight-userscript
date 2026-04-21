@@ -9,6 +9,7 @@
 // @match        https://godoc.org/*
 // @match        https://golang.org/pkg/*
 // @match        https://pkg.go.dev/*
+// @match        https://go.dev/*
 // @grant        none
 // ==/UserScript==
 
