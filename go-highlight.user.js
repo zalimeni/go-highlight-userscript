@@ -201,14 +201,34 @@ function htmlDecode(str) {
     addGlobalStyle("code[class*=language-],pre[class*=language-]{color:#f8f8f2;background:0 0;text-shadow:0 1px rgba(0,0,0,.3);font-family:Consolas,Monaco,'Andale Mono','Ubuntu Mono',monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.5;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:1em;margin:.5em 0;overflow:auto;border-radius:.3em}:not(pre)>code[class*=language-],pre[class*=language-]{background:#272822}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal}.token.cdata,.token.comment,.token.doctype,.token.prolog{color:#708090}.token.punctuation{color:#f8f8f2}.namespace{opacity:.7}.token.constant,.token.deleted,.token.property,.token.symbol,.token.tag{color:#f92672}.token.boolean,.token.number{color:#ae81ff}.token.attr-name,.token.builtin,.token.char,.token.inserted,.token.selector,.token.string{color:#a6e22e}.language-css .token.string,.style .token.string,.token.entity,.token.operator,.token.url,.token.variable{color:#f8f8f2}.token.atrule,.token.attr-value,.token.function{color:#e6db74}.token.keyword{color:#66d9ef}.token.important,.token.regex{color:#fd971f}.token.bold,.token.important{font-weight:700}.token.italic{font-style:italic}.token.entity{cursor:help}");
     addGlobalStyle('.language-go a {color: #F3A44E;}');
     
-    // find every <pre>, wrap the innerHTML in <code>, and add the Prism class(es).
-    var pres = d.getElementsByTagName("pre");
-    for (var i = 0; i < pres.length; i++) {
-      var c = d.createElement('code');
-      c.innerHTML = pres[i].innerHTML;
-      c.className = pres[i].className + " language-go";
-      pres[i].innerHTML = "";      
-      pres[i].appendChild(c);
+    function highlightPre(pre) {
+      if (!pre || pre.getAttribute("data-go-highlighted") === "1") { return; }
+      
+      var code = pre.firstElementChild;
+      var isWrappedCode = code && /code/i.test(code.nodeName) && code.getAttribute("data-go-highlight-wrapper") === "1";
+      if (!isWrappedCode) {
+        code = d.createElement("code");
+        code.innerHTML = pre.innerHTML;
+        code.className = pre.className;
+        code.setAttribute("data-go-highlight-wrapper", "1");
+        pre.innerHTML = "";
+        pre.appendChild(code);
+      }
+      
+      if (!/\blanguage-go\b/.test(code.className)) {
+        code.className = (code.className ? code.className + " " : "") + "language-go";
+      }
+      
+      pre.setAttribute("data-go-highlighted", "1");
+      Prism.highlightElement(code);
+    }
+    
+    function highlightPresIn(node) {
+      if (!node) { return; }
+      var pres = node.getElementsByTagName("pre");
+      for (var i = 0; i < pres.length; i++) {
+        highlightPre(pres[i]);
+      }
     }
     
     // Before we insert, take the element's innerHTML and replace all the html with
@@ -235,7 +255,24 @@ function htmlDecode(str) {
         env.element.innerHTML = htmlDecode(tmp);
     });
     
-    Prism.highlightAll();
+    highlightPresIn(d);
+    
+    if (window.MutationObserver) {
+      var observer = new MutationObserver(function(mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+          var added = mutations[i].addedNodes;
+          for (var j = 0; j < added.length; j++) {
+            var node = added[j];
+            if (!node || node.nodeType !== 1) { continue; }
+            if (/pre/i.test(node.nodeName)) {
+              highlightPre(node);
+            } else if (node.getElementsByTagName) {
+              highlightPresIn(node);
+            }
+          }
+        }
+      });
+      observer.observe(d.body || d.documentElement, { childList: true, subtree: true });
+    }
     
 })(document);
-
